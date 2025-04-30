@@ -2,17 +2,21 @@ package com.example.products.service;
 
 import com.example.products.model.Category;
 import com.example.products.model.Product;
-import com.example.products.model.dto.ProductDTO;
 import com.example.products.repository.CategoryRepository;
 import com.example.products.repository.ProductRepository;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.Join;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -64,5 +68,51 @@ public class ProductService {
         }
         productRepository.deleteById(id);
     }
+
+    public Page<Product> findFiltered(Optional<String> name,
+                                         Optional<Long> categoryId,
+                                         Optional<Boolean> available,
+                                         Pageable pageable) {
+
+        Specification<Product> spec = Specification.where(null);
+
+        if (name.isPresent()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.like(cb.lower(root.get("name")), "%" + name.get().toLowerCase() + "%"));
+        }
+
+        if (categoryId.isPresent()) {
+            Set<Long> ids = this.getDescendantCategoryIds(categoryId.get());
+            spec = spec.and((root, query, cb) -> {
+                Join<Product, Category> categoryJoin = root.join("category");
+                return categoryJoin.get("id").in(ids);
+            });
+
+        }
+
+        if (available.isPresent()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("available"), available.get()));
+        }
+
+        return productRepository.findAll(spec, pageable);
+    }
+
+    public Set<Long> getDescendantCategoryIds(Long categoryId) {
+        Set<Long> result = new HashSet<>();
+        Category root = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new EntityNotFoundException("Category not found"));
+
+        collectDescendants(root, result);
+        return result;
+    }
+
+    private void collectDescendants(Category category, Set<Long> result) {
+        result.add(category.getId());
+        for (Category child : category.getChildren()) {
+            collectDescendants(child, result);
+        }
+    }
+
 }
 
