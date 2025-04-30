@@ -22,11 +22,11 @@ public class WebSecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
-                                "/api-docs/**",
-                                "/api/v1/**" // API open to tests in development
+                                "/api-docs/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+                .httpBasic(withDefaults())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
