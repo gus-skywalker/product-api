@@ -56,3 +56,9 @@ VALUES ('KitchenAid Mixer', 'Stand mixer with 10 speed settings', 349.99, true, 
 -- Hammer
 INSERT INTO products (name, description, price, available, category_id, category_path)
 VALUES ('Heavy Duty Sledgehammer', 'Ideal for demolition work and masonry', 89.50, true, 12, 'Tools > Hand Tools > Hammers > Sledgehammer');
+
+-- Corrige a sequence após inserts com ID manual
+SELECT setval('categories_id_seq', (SELECT MAX(id) FROM categories));
+
+-- Corrige sequence
+SELECT setval('products_id_seq', (SELECT MAX(id) FROM products));
